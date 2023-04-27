@@ -1,16 +1,28 @@
 source(file = "LatticeKriging.r")
 
+# predict potentials based on line-of-sight electric fields at high latitudes
+
 hemi <- "north"
+
+# resolution in degree, defined as the spacing between basis functions at each level
 res <- 5
+
+# modeling domain, (-range, range)
 range <- pi/3
+
+# input and output files
 input <- paste(hemi, "_in.nc", sep = "")
 output_grid <- paste(hemi, "_out_grid.nc", sep = "")
 output <- paste(hemi, "_out_", res, "d.nc", sep = "")
+
+# flags on whether mean or variance will be calculated
 pred_m <- TRUE
 pred_se <- FALSE
 
+# earth radius, used for re-scaling
 a <- 6.371e6
 
+# definitions of variables are given in prepare_input.py
 nc <- ncdf4::nc_open(filename = input)
 time <- ncdf4::ncvar_get(nc = nc, varid = "time")
 nrec <- ncdf4::ncvar_get(nc = nc, varid = "nrec")
@@ -28,13 +40,16 @@ yo <- ncdf4::ncvar_get(nc = nc, varid = "y")
 prior <- ncdf4::ncvar_get(nc = nc, varid = "prior") / a
 ncdf4::nc_close(nc = nc)
 
+# set up the basis functions
 res <- res * pi/180
 nres <- length(res)
 x0 <- vector(mode = "list", length = nres)
 connect <- vector(mode = "list", length = nres)
 width <- array(dim = nres)
 alpha <- array(dim = nres)
+
 for (ires in 1: nres) {
+# within each level, the basis functions are equally spaced
     xy <- seq(from = -range[ires], to = range[ires], by = res[ires])
     nxy <- length(xy)
     loc <- array(dim = c(nxy^2, 2))
@@ -52,10 +67,16 @@ for (ires in 1: nres) {
     }
     x0[[ires]] <- loc
     connect[[ires]] <- con
+# increase the width of basis functions to allow overlapping
     width[ires] <- res[ires] * 2.5
+# weighting of each level can be adjusted based on actual problems
     alpha[ires] <- 1 / nres
 }
+
+# center weight is usually 2^d+0.01 where d is dimension
 centerweight <- 4.01
+
+# initial guesss of the marginal variance, will be re-estimated later
 rho <- 1
 
 ntime <- length(time)
@@ -64,6 +85,7 @@ ny <- length(yo)
 coor <- expand.grid(xo, yo)
 xnew <- cbind(coor[, 1], coor[, 2])
 
+# save essential modeling parameters for diagnostics
 lambda <- array(dim = ntime)
 d <- array(dim = ntime)
 rhoMLE <- array(dim = ntime)
@@ -92,6 +114,7 @@ for (itime in 1: ntime) {
     if (pred_se) se[, , itime] <- array(data = lk$se, dim = c(nx, ny))
 }
 
+# save outputs
 dim_time <- ncdf4::ncdim_def(name = "time", units = "", vals = time)
 dim_x <- ncdf4::ncdim_def(name = "x", units = "", vals = xo)
 dim_y <- ncdf4::ncdim_def(name = "y", units = "", vals = yo)
