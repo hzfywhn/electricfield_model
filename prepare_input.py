@@ -10,17 +10,17 @@ from scipy.interpolate import griddata
 
 hemi = 'north'
 
-# note that SuperDARN ion drifts have been converted to electric fields at this step
+# note that SuperDARN measurements have been converted to electric fields at this step
 data = Dataset(filename='E_{:s}.nc'.format(hemi))
 time = data['time']
 timeunits = time.units
 time = time[:].filled()
 nrec = data['nrec'][:].filled()
-gmlat = data['mlat'][:].filled()
-gmlt = data['mlt'][:].filled()
+gmlat = data['gmlat'][:].filled()
+gmlt = data['gmlt'][:].filled()
 Ekvect = data['Ekvect'][:].filled()
-Elos = data['E_median'][:].filled()
-Elos_sd = data['E_sd'][:].filled()
+Elos = data['Elos'][:].filled()
+Elos_sd = data['Elos_sd'][:].filled()
 data.close()
 
 # the southern hemisphere is modeled by looking downward from the north pole (across the globe)
@@ -28,7 +28,7 @@ if hemi == 'south':
     gmlat = -gmlat
     Ekvect -= 180
 
-# Weimer model has been extended to 30 MLAT using exponential decay
+# Weimer model has been extended to 30 MLAT using an exponential decay function
 bg = Dataset(filename='weimer_ext.nc')
 time_bg = bg['time'][:].filled()
 mlat_bg = bg['mlat'][:].filled()
@@ -46,11 +46,11 @@ for imlat in range(nmlat_bg):
     for imlt in range(nmlt_bg):
         pot[:, imlat, imlt] = interp(x=time, xp=time_bg, fp=potential_bg[:, imlat, imlt])
 
-# calculate Weimer electric fields from potential (centered difference)
 a = 6.371e6
 theta = deg2rad(mlat_bg)
 phi = mlt_bg * pi/12
 
+# calculate Weimer electric fields from potential (centered difference)
 Ex = ndarray(shape=(ntime, nmlat_bg, nmlt_bg))
 Ex[:, :, 0] = pot[:, :, 1] - pot[:, :, nmlt_bg-1]
 Ex[:, :, 1: nmlt_bg-1] = pot[:, :, 2: nmlt_bg] - pot[:, :, 0: nmlt_bg-2]
@@ -73,6 +73,7 @@ y = r * sin(t)
 coor_Ey = (x.flatten(), y.flatten())
 
 # add fake observations near the lower latitude boundary to prevent the model from explosion
+# 24 (mlt) x 2 (mlat) x 2 (direction) fake observations are typically enough to do
 mlt_lb, mlat_lb = meshgrid(linspace(start=0, stop=24, endpoint=False, num=24), [35, 40])
 mlt_lb = mlt_lb.flatten()
 mlat_lb = mlat_lb.flatten()
@@ -175,23 +176,24 @@ Elos_sd_out[:] = Elos_sd_all
 Elos_prior_out[:] = ex*sin(azim) + ey*cos(azim)
 data_in.close()
 
-# create output grids at an arbitrary resolution, note the prior is potential (not electric field)
+# create output grids at an arbitrary resolution, pi*2/9 corresponds to 50 MLAT
 nxy = 161
 xy = linspace(start=-pi*2/9, stop=pi*2/9, num=nxy)
 x, y = meshgrid(xy, xy)
 xi = (x.flatten(), y.flatten())
 prior = ndarray(shape=(ntime, nxy, nxy))
 for itime in range(ntime):
+# the prior is potential (not electric field)
     prior[itime, :, :] = griddata(points=coor, values=pot[itime, :, :].flatten(), xi=xi).reshape((nxy, nxy))
 
 data_out = Dataset(filename=hemi+'_out_grid.nc', mode='w')
 data_out.createDimension(dimname='time', size=ntime)
 data_out.createDimension(dimname='x', size=nxy)
 data_out.createDimension(dimname='y', size=nxy)
-time_out = data_out.createVariable(varname='time', datatype='i', dimensions='time')
-x_out = data_out.createVariable(varname='x', datatype='f', dimensions='x')
-y_out = data_out.createVariable(varname='y', datatype='f', dimensions='y')
-prior_out = data_out.createVariable(varname='prior', datatype='f', dimensions=('time', 'y', 'x'))
+time_out = data_out.createVariable(varname='time', datatype='i4', dimensions='time')
+x_out = data_out.createVariable(varname='x', datatype='f4', dimensions='x')
+y_out = data_out.createVariable(varname='y', datatype='f4', dimensions='y')
+prior_out = data_out.createVariable(varname='prior', datatype='f4', dimensions=('time', 'y', 'x'))
 time_out.units = timeunits
 time_out[:] = time
 x_out[:] = xy

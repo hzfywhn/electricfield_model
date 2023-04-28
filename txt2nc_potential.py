@@ -45,9 +45,11 @@ itime = 0
 i = 0
 for line in datain:
     if i+nfull < np:
+# current line is part of the model output
         pot[i: i+nfull] = full_line.read(line)
         i += nfull
     else:
+# current line marks the end of the model output, reformat to mlat/mlt grids
         pot[i: i+nsub] = sub_line.read(line)
         potential[itime, :, :] = pot.reshape((nmlat, nmlt))
         itime += 1
@@ -58,10 +60,10 @@ dataout = Dataset(filename='weimer.nc', mode='w')
 dataout.createDimension(dimname='time', size=ntime)
 dataout.createDimension(dimname='mlat', size=nmlat)
 dataout.createDimension(dimname='mlt', size=nmlt)
-time_out = dataout.createVariable(varname='time', datatype='i', dimensions='time')
-mlat_out = dataout.createVariable(varname='mlat', datatype='f', dimensions='mlat')
-mlt_out = dataout.createVariable(varname='mlt', datatype='f', dimensions='mlt')
-potential_out = dataout.createVariable(varname='potential', datatype='f', dimensions=('time', 'mlat', 'mlt'))
+time_out = dataout.createVariable(varname='time', datatype='i4', dimensions='time')
+mlat_out = dataout.createVariable(varname='mlat', datatype='f4', dimensions='mlat')
+mlt_out = dataout.createVariable(varname='mlt', datatype='f4', dimensions='mlt')
+potential_out = dataout.createVariable(varname='potential', datatype='f4', dimensions=('time', 'mlat', 'mlt'))
 time_out.units = 'minutes since {:4d}-{:02d}-{:02d} 00:00:00'.format(Year, Month, Day)
 for itime in range(ntime):
     time_out[itime] = int((datetime(year=year[itime], month=month[itime], day=day[itime], hour=hour[itime]) - start_time).total_seconds() / 60)

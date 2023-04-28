@@ -22,12 +22,13 @@ nmlat = len(mlat)
 nmlt = len(mlt)
 
 # exponential factor for the decay function
-# this factor doesn't really matter and can be changed to any positive values
+# current value is chosen to make the potential decrease fast
+# and let the value at 30 MLAT be small (but non-zero)
 expfac = 5
 
 for itime in range(ntime):
     for imlt in range(nmlt):
-# find the first non-zero element at each MLT
+# find the first non-zero element at each MLT from 90 MLAT
         first = argmin(isclose(pot[itime, :, imlt], 0))
 
 # exponential decay outward (to lower latitudes)
@@ -37,10 +38,10 @@ dataout = Dataset(filename='weimer_ext.nc', mode='w')
 dataout.createDimension(dimname='time', size=ntime)
 dataout.createDimension(dimname='mlat', size=nmlat)
 dataout.createDimension(dimname='mlt', size=nmlt)
-time_out = dataout.createVariable(varname='time', datatype='i', dimensions='time')
-mlat_out = dataout.createVariable(varname='mlat', datatype='i', dimensions='mlat')
-mlt_out = dataout.createVariable(varname='mlt', datatype='f', dimensions='mlt')
-pot_out = dataout.createVariable(varname='potential', datatype='f', dimensions=('time', 'mlat', 'mlt'))
+time_out = dataout.createVariable(varname='time', datatype='i4', dimensions='time')
+mlat_out = dataout.createVariable(varname='mlat', datatype='i4', dimensions='mlat')
+mlt_out = dataout.createVariable(varname='mlt', datatype='f4', dimensions='mlt')
+pot_out = dataout.createVariable(varname='potential', datatype='f4', dimensions=('time', 'mlat', 'mlt'))
 time_out.units = timeunits
 time_out[:] = time
 mlat_out[:] = mlat

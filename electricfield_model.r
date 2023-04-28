@@ -7,22 +7,25 @@ hemi <- "north"
 # resolution in degree, defined as the spacing between basis functions at each level
 res <- 5
 
-# modeling domain, (-range, range)
-range <- pi/3
-
 # input and output files
 input <- paste(hemi, "_in.nc", sep = "")
 output_grid <- paste(hemi, "_out_grid.nc", sep = "")
 output <- paste(hemi, "_out_", res, "d.nc", sep = "")
 
-# flags on whether mean or variance will be calculated
+# whether mean will be calculated
 pred_m <- TRUE
+
+# predicting variance is computation expensive
+# it should be turned on only for demonstration purposes
 pred_se <- FALSE
 
-# earth radius, used for re-scaling
+# modeling domain, (-range, range), this is suggested to be larger than the output grid
+range <- pi/3
+
+# earth radius, used for re-scaling between electric field and potential
 a <- 6.371e6
 
-# definitions of variables are given in prepare_input.py
+# read input data, definitions of variables are given in prepare_input.py
 nc <- ncdf4::nc_open(filename = input)
 time <- ncdf4::ncvar_get(nc = nc, varid = "time")
 nrec <- ncdf4::ncvar_get(nc = nc, varid = "nrec")
@@ -34,6 +37,7 @@ Elos_sd <- ncdf4::ncvar_get(nc = nc, varid = "Elos_sd")
 Elos_prior <- ncdf4::ncvar_get(nc = nc, varid = "Elos_prior")
 ncdf4::nc_close(nc = nc)
 
+# read the designated output grid
 nc <- ncdf4::nc_open(filename = output_grid)
 xo <- ncdf4::ncvar_get(nc = nc, varid = "x")
 yo <- ncdf4::ncvar_get(nc = nc, varid = "y")
@@ -79,13 +83,14 @@ centerweight <- 4.01
 # initial guesss of the marginal variance, will be re-estimated later
 rho <- 1
 
-ntime <- length(time)
-nx <- length(xo)
-ny <- length(yo)
+# create the grid to be predicted
 coor <- expand.grid(xo, yo)
 xnew <- cbind(coor[, 1], coor[, 2])
 
 # save essential modeling parameters for diagnostics
+ntime <- length(time)
+nx <- length(xo)
+ny <- length(yo)
 lambda <- array(dim = ntime)
 d <- array(dim = ntime)
 rhoMLE <- array(dim = ntime)
@@ -96,6 +101,7 @@ for (itime in 1: ntime) {
     n <- nrec[itime]
     x <- cbind(xi[1: n, itime], yi[1: n, itime])
     t <- azim[1: n, itime]
+# direction cosine goes with cos(<v,x>), cos(<v,y>)
     dircos <- cbind(cos(t), sin(t))
     y <- Elos[1: n, itime]
     w <- Elos_sd[1: n, itime]
@@ -124,7 +130,10 @@ rho_out <- ncdf4::ncvar_def(name = "rho", units = "", dim = dim_time)
 like_out <- ncdf4::ncvar_def(name = "like", units = "", dim = dim_time)
 d_out <- ncdf4::ncvar_def(name = "d", units = "", dim = dim_time)
 
+# these are mandatory outputs
 vars_out <- list(lambda_out, rho_out, like_out, d_out)
+
+# output mean and variance if flagged
 if (pred_m) {
     m_out <- ncdf4::ncvar_def(name = "m", units = "", dim = list(dim_x, dim_y, dim_time))
     vars_out <- c(vars_out, list(m_out))
@@ -133,6 +142,7 @@ if (pred_se) {
     se_out <- ncdf4::ncvar_def(name = "se", units = "", dim = list(dim_x, dim_y, dim_time))
     vars_out <- c(vars_out, list(se_out))
 }
+
 nc <- ncdf4::nc_create(filename = output, vars = vars_out, force_v4 = TRUE)
 ncdf4::ncvar_put(nc = nc, varid = lambda_out, vals = lambda)
 ncdf4::ncvar_put(nc = nc, varid = rho_out, vals = rhoMLE)
