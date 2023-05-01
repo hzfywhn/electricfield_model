@@ -1,8 +1,9 @@
 Spatial modeling of electric fields using Lattice Kriging
 
 Before running the code, you should have:
-1. SuperDARN gridded velocity in text grid2 file, contact Virginia Tech SuperDARN group for the required input files
-2. Weimer potential output (text file), note that the Weimer model can be found at https://zenodo.org/record/2530324
+1. SuperDARN gridded velocity in text grid2 file. See 20150317.north.grd2 for a sample. Contact Virginia Tech SuperDARN group for the required input files.
+2. IMF required for the Weimer model can be obtained from SPDF OMNIWeb (https://omniweb.gsfc.nasa.gov/).
+3. Weimer potential output (text file) after running the Weimer model. Weimer model can be found at https://zenodo.org/record/2530324. imfs.txt and potentialgrid.txt are the sample input for gridpotentials.sav, and potentials.txt is the output.
 
 Then run codes in the following sequence:
 1. txt2nc_ion_drift, to convert SuperDARN text files to netcdf (20150317.north.grd2 -> ion_drift_north.nc)
