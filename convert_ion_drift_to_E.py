@@ -10,7 +10,7 @@ from pyIGRF import igrf_value
 # output: SuperDARN electric fields
 
 
-hemi = 'south'
+hemi = 'north'
 
 datain = Dataset(filename='ion_drift_{:s}.nc'.format(hemi))
 time = datain['time']

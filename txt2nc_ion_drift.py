@@ -25,11 +25,11 @@ kvect = ndarray(shape=(ntime, MAXRECS))
 vlos = ndarray(shape=(ntime, MAXRECS))
 vlos_sd = ndarray(shape=(ntime, MAXRECS))
 
+itime = 0
 cur_date = start_date
 while cur_date < stop_date:
     datain = open(file='{:s}.{:s}.grd'.format(cur_date.strftime('%Y%m%d'), hemi))
 
-    itime = 0
     for hour in range(24):
         for minute in range(1, 60, 2):
 # no records at 00:00:00-00:02:00 and 23:58:00-24:00:00, skip
