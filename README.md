@@ -7,12 +7,12 @@ Before running the code, you should have:
 
 Then run codes in the following sequence:
 1. txt2nc_ion_drift, to convert SuperDARN text files to netcdf (20150317.north.grd2 -> ion_drift_north.nc)
-2. calculate_mlt_ion_drift, to include magnetic local time information (ion_drift_mlt_north.nc)
+2. calculate_mlt_ion_drift, to include magnetic local time information (ion_drift_north.nc -> ion_drift_mlt_north.nc)
 3. (optional) plot_ion_drift, to draw vector plots of ion drifts and compare to SuperDARN map velocity tool
 4. convert_ion_drift_to_E, to convert ion drifts to electric fields and calculate mlt (ion_drift_mlt_north.nc -> E_north.nc)
 5. txt2nc_potential, to convert Weimer text files to netcdf (potentials.txt -> weimer.nc)
 6. extend_potential, to extend Weimer potential to lower latitudes (weimer.nc -> weimer_ext.nc)
-7. prepare_input, to combine SuperDARN electric fields and extended Weimer potentials and produce formated input for modeling (north_in.nc, north_out_grid.nc)
-8. electricfield_model, to predict potentials from existing electric field observations (north_out_5d.nc)
+7. prepare_input, to combine SuperDARN electric fields and extended Weimer potentials and produce formated input for modeling (E_north.nc, weimer_ext.nc -> north_in.nc, north_out_grid.nc)
+8. electricfield_model, to predict potentials from existing electric field observations (north_in.nc, north_out_grid.nc -> north_out_5d.nc)
 
 The final output north_out_5d.nc is the one containing predicted potentials at high latitudes
